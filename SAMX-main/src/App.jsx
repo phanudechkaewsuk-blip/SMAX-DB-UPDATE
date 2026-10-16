@@ -1,23 +1,23 @@
 import { useState } from 'react';
 import {
-  Activity, BellOff, BellRing, Droplets, Gauge, History,
-  LayoutDashboard, Menu, Settings, ShieldCheck, Waves, Wifi, WifiOff, X,
+  Activity, BellOff, BellRing, Droplets, History,
+  LayoutDashboard, Menu, ShieldCheck, Waves, Wifi, WifiOff, X,
 } from 'lucide-react';
+
 
 import useIoTData from './hooks/useIoTData';
 import useBuzzer from './hooks/useBuzzer';
-import { ROLE } from './constants/waterLevel';
+import { ROLE, THRESHOLD_TEXT } from './constants/waterLevel';
 import StatusCard from './components/StatusCard';
 import WaterTank from './components/WaterTank';
 import DamControlPanel from './components/DamControlPanel';
 import SystemHealth from './components/SystemHealth';
 import HistoryChart from './components/HistoryChart';
+import HistoryPage from './pages/HistoryPage';
 
 const NAV = [
   { key: 'dashboard', label: 'แดชบอร์ด', Icon: LayoutDashboard },
   { key: 'history', label: 'ประวัติย้อนหลัง', Icon: History },
-  { key: 'devices', label: 'อุปกรณ์', Icon: Gauge },
-  { key: 'settings', label: 'ตั้งค่า', Icon: Settings },
 ];
 
 export default function App() {
@@ -38,8 +38,9 @@ export default function App() {
   const gateLabel = { OPEN: 'เปิด', CLOSED: 'ปิด', MOVING: 'กำลังทำงาน' }[iot.gate];
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
-      <aside className="hidden w-64 shrink-0 border-r border-slate-800 bg-slate-900/50 p-5 lg:block">
+    <div className="relative isolate flex min-h-screen bg-slate-950">
+      <div aria-hidden="true" className="water-backdrop pointer-events-none fixed inset-0 z-0" />
+      <aside className="relative z-10 hidden w-64 shrink-0 border-r border-slate-800 bg-slate-900/50 p-5 lg:block">
         <Brand />
         <nav className="mt-8 space-y-1">
           {NAV.map(({ key, label, Icon }) => (
@@ -85,7 +86,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-800 bg-slate-950/90 px-4 py-3 backdrop-blur sm:px-6">
           <button onClick={() => setNavOpen(true)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 lg:hidden">
             <Menu className="h-5 w-5" />
@@ -121,13 +122,9 @@ export default function App() {
         )}
 
         <main className="flex-1 space-y-4 p-4 sm:space-y-5 sm:p-6">
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatusCard
-              icon={Droplets} label="ระดับน้ำปัจจุบัน"
-              value={iot.sensorOk ? iot.level.toFixed(1) : '--'} unit="cm"
-              sub="เกณฑ์: ปลอดภัย 0–8 · เฝ้าระวัง 9–14 · วิกฤต 15–18"
-              accentText={iot.status.text} accentSoft={iot.status.bgSoft} border={iot.status.border}
-            />
+          {active === 'dashboard' ? (
+            <>
+              <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <StatusCard
               icon={Waves} label="สถานะน้ำ" value={iot.status.labelEn}
               sub={`${iot.status.label} · ช่วง ${iot.status.range}`}
@@ -145,11 +142,17 @@ export default function App() {
               sub={iot.sensorOk ? 'เซ็นเซอร์ทำงานปกติ' : 'เซ็นเซอร์ไม่ตอบสนอง'}
               accentText={connMeta.text} accentSoft={connMeta.soft}
             />
-          </section>
+              </section>
 
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-3 sm:gap-5">
+              <section className="grid grid-cols-1 gap-4 lg:grid-cols-3 sm:gap-5">
             <div className="lg:col-span-1">
-              <WaterTank level={iot.level} status={iot.status} sensorOk={iot.sensorOk} />
+              <div className="wg-card rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h3 className="text-sm text-slate-400">ระดับน้ำปัจจุบัน</h3>
+                  <span className="text-right text-[11px] text-slate-500">{THRESHOLD_TEXT}</span>
+                </div>
+                <WaterTank levelCm={iot.sensorOk ? iot.level : null} maxCm={20} />
+              </div>
             </div>
             <div className="space-y-4 sm:space-y-5 lg:col-span-1">
               <DamControlPanel
@@ -166,7 +169,11 @@ export default function App() {
               <HistoryChart data={iot.history} color={iot.status.hex} />
               <EventLog log={iot.log} />
             </div>
-          </section>
+              </section>
+            </>
+          ) : (
+            <HistoryPage />
+          )}
         </main>
       </div>
     </div>

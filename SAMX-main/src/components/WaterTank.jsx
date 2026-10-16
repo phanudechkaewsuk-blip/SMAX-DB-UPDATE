@@ -1,83 +1,61 @@
-import { TANK_MAX_CM, THRESHOLD_CRITICAL, THRESHOLD_WARNING } from '../constants/waterLevel';
+import { classifyLevel, STATUS_META, THRESHOLDS } from '../constants/waterLevel';
 
-export default function WaterTank({ level, status, sensorOk }) {
-  const pct = Math.min(100, Math.max(0, (level / TANK_MAX_CM) * 100));
-  const warnPct = (THRESHOLD_WARNING / TANK_MAX_CM) * 100;
-  const critPct = (THRESHOLD_CRITICAL / TANK_MAX_CM) * 100;
+export default function WaterTank({ levelCm, maxCm = 20 }) {
+  const has = levelCm !== null && levelCm !== undefined && !Number.isNaN(Number(levelCm));
+  const pct = has ? Math.min(100, Math.max(0, (Number(levelCm) / maxCm) * 100)) : 0;
+  const meta = STATUS_META[classifyLevel(levelCm)];
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg backdrop-blur">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-200">ระดับน้ำปัจจุบัน</h3>
-        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status.bgSoft} ${status.text}`}>
-          {status.labelEn} · {status.range}
-        </span>
+    <div className="relative h-64 w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+      {/* เส้นเกณฑ์ */}
+      {[
+        { v: THRESHOLDS.SAFE_MAX, c: '#22c55e' },
+        { v: THRESHOLDS.WATCH_MAX, c: '#eab308' },
+        { v: THRESHOLDS.CRITICAL_MIN, c: '#ef4444' },
+      ].map((t) => (
+        <div
+          key={t.v}
+          className="absolute left-0 right-0 z-20 border-t border-dashed"
+          style={{ bottom: `${(t.v / maxCm) * 100}%`, borderColor: t.c, opacity: .55 }}
+        >
+          <span className="absolute right-2 -top-5 text-[10px]" style={{ color: t.c }}>
+            {t.v} cm
+          </span>
+        </div>
+      ))}
+
+      {/* มวลน้ำ */}
+      <div
+        className="absolute inset-x-0 bottom-0 z-10 transition-[height] duration-1000 ease-out"
+        style={{ height: `${pct}%`, background: meta.soft }}
+      >
+        <div className="absolute inset-x-0 -top-3 h-6 w-[200%] wg-wave"
+             style={{ background: meta.color, opacity: .35, borderRadius: '45%' }} />
+        <div className="absolute inset-x-0 -top-4 h-6 w-[200%] wg-wave-2"
+             style={{ background: meta.color, opacity: .25, borderRadius: '42%' }} />
+        <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${meta.color}55, transparent)` }} />
+        {/* ฟองอากาศ */}
+        {[15, 40, 62, 85].map((l, i) => (
+          <span
+            key={l}
+            className="wg-bubble absolute bottom-2 h-2 w-2 rounded-full bg-white/40"
+            style={{ left: `${l}%`, animationDelay: `${i * 1.3}s` }}
+          />
+        ))}
       </div>
 
-      <div className="flex items-stretch gap-4">
-        {/* แกนสเกล cm */}
-        <div className="relative w-9 shrink-0 text-[10px] text-slate-500">
-          {[20, 15, 10, 5, 0].map((tick) => (
-            <div
-              key={tick}
-              className="absolute right-0 -translate-y-1/2"
-              style={{ bottom: `${(tick / TANK_MAX_CM) * 100}%` }}
-            >
-              {tick} cm
-            </div>
-          ))}
-        </div>
-
-        {/* ตัวถัง */}
-        <div className="relative h-64 flex-1 overflow-hidden rounded-xl border-2 border-slate-700 bg-slate-950/80">
-          {/* เส้นขีดอันตราย */}
-          <div
-            className="absolute left-0 right-0 border-t border-dashed border-amber-500/60"
-            style={{ bottom: `${warnPct}%` }}
-          >
-            <span className="absolute right-1 -top-4 text-[10px] font-medium text-amber-400">
-              WARNING 9cm
-            </span>
+      {/* ตัวเลข */}
+      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center">
+        <div className="wg-bob text-center">
+          <div className="font-mono text-5xl font-bold text-slate-50">
+            {has ? Number(levelCm).toFixed(1) : '— —'}
+            <span className="ml-1 text-xl text-slate-400">cm</span>
           </div>
-          <div
-            className="absolute left-0 right-0 border-t border-dashed border-red-500/70"
-            style={{ bottom: `${critPct}%` }}
-          >
-            <span className="absolute right-1 -top-4 text-[10px] font-medium text-red-400">
-              CRITICAL 15cm
-            </span>
+          <div className="mt-2 inline-block rounded-full px-4 py-1 text-sm font-semibold"
+               style={{ color: meta.color, background: meta.soft }}>
+            {meta.label}
           </div>
-
-          {/* มวลน้ำ */}
-          <div
-            className={`absolute bottom-0 left-0 right-0 transition-all duration-1000 ease-out ${status.bgSolid} opacity-80`}
-            style={{ height: `${pct}%` }}
-          >
-            <div className="absolute -top-2 left-0 h-4 w-[200%] animate-wave opacity-60">
-              <svg viewBox="0 0 120 12" preserveAspectRatio="none" className="h-full w-full">
-                <path
-                  d="M0 6 Q 15 0 30 6 T 60 6 T 90 6 T 120 6 V12 H0 Z"
-                  fill={status.hex}
-                />
-              </svg>
-            </div>
-          </div>
-
-          {/* ตัวเลขกลางถัง */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-4xl font-bold text-white drop-shadow-lg">
-              {sensorOk ? level.toFixed(1) : '--'}
-            </span>
-            <span className="text-xs font-medium text-white/70">เซนติเมตร</span>
-          </div>
-
-          {!sensorOk && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
-              <span className="rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-300">
-                SENSOR OFFLINE
-              </span>
-            </div>
-          )}
+          <p className="mt-2 text-xs text-slate-400">{meta.message}</p>
         </div>
       </div>
     </div>

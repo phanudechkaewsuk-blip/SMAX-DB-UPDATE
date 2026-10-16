@@ -9,3 +9,79 @@ body {
   @apply bg-slate-950 text-slate-100 antialiased;
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
+.water-backdrop {
+  overflow: hidden;
+  background-color: #020617;
+  background-image:
+    linear-gradient(180deg, rgba(8, 47, 73, .14), transparent 42%),
+    repeating-linear-gradient(168deg, transparent 0 28px, rgba(56, 189, 248, .018) 29px 30px, transparent 31px 58px);
+}
+.water-backdrop::before,
+.water-backdrop::after {
+  position: absolute;
+  right: -20%;
+  bottom: -34vh;
+  left: -20%;
+  height: 72vh;
+  min-height: 420px;
+  border-radius: 50% 50% 0 0 / 13% 13% 0 0;
+  content: '';
+  pointer-events: none;
+}
+.water-backdrop::before {
+  background:
+    repeating-radial-gradient(ellipse 110% 78% at 50% 0%, transparent 0 38px, rgba(56, 189, 248, .075) 40px 41px, transparent 43px 78px),
+    linear-gradient(180deg, rgba(8, 145, 178, .015), rgba(8, 145, 178, .08));
+  animation: background-tide 22s ease-in-out infinite alternate;
+}
+.water-backdrop::after {
+  right: -32%;
+  bottom: -39vh;
+  left: -8%;
+  height: 66vh;
+  background: repeating-radial-gradient(ellipse 105% 80% at 50% 0%, transparent 0 55px, rgba(125, 211, 252, .045) 57px 58px, transparent 60px 112px);
+  animation: background-tide 30s ease-in-out -8s infinite alternate-reverse;
+}
+@keyframes background-tide {
+  from { transform: translate3d(-2%, 0, 0) rotate(-2deg) scaleY(.96); }
+  to { transform: translate3d(2%, -2vh, 0) rotate(2deg) scaleY(1.04); }
+}
+@keyframes wave {
+  0%   { transform: translateX(0) translateZ(0) scaleY(1); }
+  50%  { transform: translateX(-25%) translateZ(0) scaleY(0.85); }
+  100% { transform: translateX(-50%) translateZ(0) scaleY(1); }
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+@keyframes ripple {
+  0%   { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+@keyframes bubble {
+  0%   { transform: translateY(0) scale(0.6); opacity: 0; }
+  20%  { opacity: 0.7; }
+  100% { transform: translateY(-120px) scale(1); opacity: 0; }
+}
+
+.wg-wave   { animation: wave 7s cubic-bezier(.36,.45,.63,.53) infinite; }
+.wg-wave-2 { animation: wave 10s cubic-bezier(.36,.45,.63,.53) -3s infinite; opacity: .5; }
+.wg-bob    { animation: bob 4s ease-in-out infinite; }
+.wg-ripple { animation: ripple 2.4s ease-out infinite; }
+.wg-bubble { animation: bubble 6s ease-in infinite; }
+
+.wg-card {
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.wg-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0,0,0,.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .water-backdrop::before,
+  .water-backdrop::after {
+    animation: none;
+  }
+}

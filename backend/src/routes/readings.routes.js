@@ -12,7 +12,7 @@ readingsRouter.get('/:code', async (req, res) => {
   const { from, to } = req.query;
 
   const { rows } = await query(
-    `SELECT level_cm, status, sensor_ok, recorded_at
+    `SELECT id, level_cm, status, sensor_ok, recorded_at
      FROM water_readings
      WHERE device_id = $1
        AND ($2::timestamptz IS NULL OR recorded_at >= $2)
@@ -21,10 +21,17 @@ readingsRouter.get('/:code', async (req, res) => {
     [d.id, from ?? null, to ?? null, limit]
   );
 
-  res.json(rows.reverse().map((r) => ({
-    t: r.recorded_at,
-    level: r.level_cm === null ? null : Number(r.level_cm),
-    status: r.status,
-    sensorOk: r.sensor_ok,
-  })));
+  res.json(rows.reverse().map((r) => {
+    const level = r.level_cm === null ? null : Number(r.level_cm);
+    return {
+      id: r.id,
+      recorded_at: r.recorded_at,
+      level_cm: level,
+      status: r.status,
+      sensor_ok: r.sensor_ok,
+      t: r.recorded_at,
+      level,
+      sensorOk: r.sensor_ok,
+    };
+  }));
 });
